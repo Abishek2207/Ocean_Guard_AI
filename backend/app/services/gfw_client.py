@@ -106,3 +106,33 @@ def get_fishing_effort(lat: float, lon: float) -> float:
         return 0.0
         
     return 0.0
+
+def fetch_gfw_context(lat: float, lon: float, start_date: str, end_date: str, radius_km: float) -> dict:
+    if not settings.GFW_API_TOKEN:
+        return {"status": "TOKEN_MISSING", "message": "GFW token not configured."}
+        
+    headers = {
+        "Authorization": f"Bearer {settings.GFW_API_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    
+    try:
+        url = "https://gateway.api.globalfishingwatch.org/v3/events"
+        params = {
+            "start-date": start_date,
+            "end-date": end_date,
+            "datasets": "public-global-fishing-events:v1",
+            "confidences": "3,4"
+        }
+        response = requests.get(url, headers=headers, params=params, timeout=10)
+        
+        if response.status_code == 200:
+            data = response.json()
+            cache_file = os.path.join(settings.CACHE_DIR, "gfw", f"context_{lat}_{lon}.json")
+            with open(cache_file, "w") as f:
+                json.dump(data, f)
+            return {"status": "success", "source_status": "LIVE_API", "data": data}
+        else:
+            return {"status": "error", "source_status": "API_ERROR", "message": f"API Error: {response.status_code}"}
+    except Exception as e:
+        return {"status": "error", "source_status": "API_ERROR", "message": str(e)}

@@ -12,6 +12,10 @@ class Settings:
     MODEL_PATH = os.getenv("MODEL_PATH", str(BACKEND_DIR / "ml" / "models" / "best.pt"))
     CACHE_DIR = os.getenv("CACHE_DIR", str(BACKEND_DIR / "data" / "cached_api_responses"))
     upload_dir = Path(os.getenv("UPLOAD_DIR", str(BACKEND_DIR / "data" / "uploads")))
+    CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
+    NEXT_PUBLIC_API_BASE_URL = os.getenv("NEXT_PUBLIC_API_BASE_URL", "http://localhost:8000")
 
 settings = Settings()
 settings.upload_dir.mkdir(parents=True, exist_ok=True)
+Path(settings.CACHE_DIR).joinpath("gfw").mkdir(parents=True, exist_ok=True)
+Path(settings.CACHE_DIR).joinpath("wdpa").mkdir(parents=True, exist_ok=True)

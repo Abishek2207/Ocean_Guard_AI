@@ -19,18 +19,25 @@ const fadeUp = { hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0, tra
 
 export default function MissionControl() {
   const [apiStatus, setApiStatus] = useState<'checking' | 'live' | 'offline'>('checking');
+  const [healthData, setHealthData] = useState<any>(null);
   const [detections, setDetections] = useState<any[]>([]);
   const [selectedIdx, setSelectedIdx] = useState<number>(0);
   const [downloading, setDownloading] = useState(false);
   const [mapToggles, setMapToggles] = useState({ showAIS: true, showHeatmap: false, showFishing: false });
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
+  const [mpaQuery, setMpaQuery] = useState('');
+  const [searchingMpa, setSearchingMpa] = useState(false);
+  const [showLivePanel, setShowLivePanel] = useState(false);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
   useEffect(() => {
     axios.get(`${API_URL}/health`)
-      .then(() => setApiStatus('live'))
+      .then((res) => {
+        setApiStatus('live');
+        setHealthData(res.data);
+      })
       .catch(() => setApiStatus('offline'));
   }, []);
 
@@ -129,17 +136,54 @@ export default function MissionControl() {
         {/* Status + Actions */}
         <div className="flex items-center gap-3">
           {/* Data status */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
-            style={{ background: 'rgba(6,22,38,0.8)', border: '1px solid rgba(0,212,200,0.1)' }}>
-            <span className={`w-1.5 h-1.5 rounded-full ${
-              apiStatus === 'offline' ? 'bg-red-400' :
-              apiStatus === 'checking' ? 'bg-amber-400 animate-pulse' : 'bg-teal animate-pulse'
-            }`} />
-            <span className="text-[10px] font-mono text-ocean-muted">
-              {apiStatus === 'offline' ? 'Backend Offline' :
-               apiStatus === 'checking' ? 'Connecting…' :
-               dataSource === 'CACHED_HISTORICAL' ? 'Cached Demo Ready' : 'Backend Connected'}
-            </span>
+          <div className="relative">
+            <button onClick={() => setShowLivePanel(!showLivePanel)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors hover:bg-teal/10"
+              style={{ background: 'rgba(6,22,38,0.8)', border: '1px solid rgba(0,212,200,0.1)' }}>
+              <span className={`w-1.5 h-1.5 rounded-full ${
+                apiStatus === 'offline' ? 'bg-red-400' :
+                apiStatus === 'checking' ? 'bg-amber-400 animate-pulse' : 'bg-teal animate-pulse'
+              }`} />
+              <span className="text-[10px] font-mono text-ocean-muted">
+                {apiStatus === 'offline' ? 'Backend Offline' :
+                 apiStatus === 'checking' ? 'Connecting…' :
+                 dataSource === 'CACHED_HISTORICAL' ? 'Cached Demo Ready' : 'Live Connected'}
+              </span>
+            </button>
+            
+            <AnimatePresence>
+              {showLivePanel && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="absolute right-0 top-full mt-2 w-64 p-4 rounded-xl z-50 glass-strong"
+                  style={{ border: '1px solid rgba(0,212,200,0.2)' }}>
+                  <div className="text-[10px] font-mono uppercase text-ocean-muted mb-3 tracking-widest border-b pb-2" style={{ borderColor: 'rgba(0,212,200,0.1)' }}>Live Data Control Panel</div>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-ocean-muted">Backend API</span>
+                      <span className={apiStatus === 'live' ? 'text-teal' : 'text-red-400'}>{apiStatus.toUpperCase()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-ocean-muted">GFW Token</span>
+                      <span className={healthData?.gfw_token_configured ? 'text-teal' : 'text-amber-400'}>{healthData?.gfw_token_configured ? 'CONFIGURED' : 'MISSING'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-ocean-muted">WDPA Token</span>
+                      <span className={healthData?.wdpa_token_configured ? 'text-teal' : 'text-amber-400'}>{healthData?.wdpa_token_configured ? 'CONFIGURED' : 'MISSING'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-ocean-muted">YOLO Model</span>
+                      <span className={healthData?.model_loaded ? 'text-teal' : 'text-amber-400'}>{healthData?.model_loaded ? 'LOADED' : 'MISSING'}</span>
+                    </div>
+                    <div className="flex justify-between mt-2 pt-2 border-t" style={{ borderColor: 'rgba(0,212,200,0.1)' }}>
+                      <span className="text-ocean-muted font-bold">Current Mode</span>
+                      <span className="text-white font-mono text-[10px] bg-white/10 px-1.5 py-0.5 rounded">{dataSource}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Judge Demo */}
@@ -277,6 +321,37 @@ export default function MissionControl() {
             style={{ borderColor: 'rgba(0,212,200,0.08)', background: 'rgba(2,13,26,0.8)' }}>
             <MapIcon className="w-3.5 h-3.5 text-teal" />
             <span className="text-[10px] font-mono text-ocean-muted uppercase tracking-widest">Geospatial Monitor</span>
+            
+            {/* Live MPA Search */}
+            <div className="flex items-center gap-2 ml-4">
+              <input 
+                type="text" 
+                value={mpaQuery}
+                onChange={(e) => setMpaQuery(e.target.value)}
+                placeholder="Search Live MPAs..." 
+                className="w-48 bg-black/40 border text-xs px-3 py-1 rounded-lg text-ocean-text placeholder-ocean-muted focus:outline-none"
+                style={{ borderColor: 'rgba(0,212,200,0.15)' }}
+                onKeyDown={async (e) => {
+                  if (e.key === 'Enter' && mpaQuery.trim()) {
+                    setSearchingMpa(true);
+                    try {
+                      const res = await axios.get(`${API_URL}/api/live/mpa/search?query=${mpaQuery}`);
+                      if (res.data.status === 'success') {
+                        alert(`Found MPAs via LIVE_API! Cached locally.`);
+                      } else {
+                        alert(`Search failed: ${res.data.message || res.data.status}`);
+                      }
+                    } catch (err) {
+                      alert('Search request failed.');
+                    } finally {
+                      setSearchingMpa(false);
+                    }
+                  }
+                }}
+              />
+              {searchingMpa && <span className="w-3 h-3 border-2 border-teal border-t-transparent rounded-full animate-spin"></span>}
+            </div>
+
             <div className="ml-auto flex gap-2">
               {[
                 { key: 'showAIS', label: 'AIS' },

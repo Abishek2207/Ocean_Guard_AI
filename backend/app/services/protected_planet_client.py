@@ -102,3 +102,43 @@ def check_mpa_status(lat: float, lon: float) -> MPAStatus:
             source_status=DataSourceStatus.API_ERROR,
             distance_km=100.0
         )
+
+def search_mpa_live(query: str) -> dict:
+    if not settings.PROTECTED_PLANET_TOKEN:
+        return {"status": "TOKEN_MISSING", "message": "Protected Planet token not configured."}
+    
+    headers = {"Authorization": f"Token token={settings.PROTECTED_PLANET_TOKEN}"}
+    try:
+        url = "https://api.protectedplanet.net/v3/protected_areas/search"
+        response = requests.get(url, headers=headers, params={"search_term": query}, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            # Cache the response
+            safe_query = "".join(c if c.isalnum() else "_" for c in query)
+            cache_file = os.path.join(settings.CACHE_DIR, "wdpa", f"search_{safe_query}.json")
+            with open(cache_file, "w") as f:
+                json.dump(data, f)
+            return {"status": "success", "source_status": "LIVE_API", "data": data}
+        else:
+            return {"status": "error", "source_status": "API_ERROR", "message": f"API Error: {response.status_code}"}
+    except Exception as e:
+        return {"status": "error", "source_status": "API_ERROR", "message": str(e)}
+
+def get_mpa_live(wdpa_id: int) -> dict:
+    if not settings.PROTECTED_PLANET_TOKEN:
+        return {"status": "TOKEN_MISSING", "message": "Protected Planet token not configured."}
+        
+    headers = {"Authorization": f"Token token={settings.PROTECTED_PLANET_TOKEN}"}
+    try:
+        url = f"https://api.protectedplanet.net/v3/protected_areas/{wdpa_id}"
+        response = requests.get(url, headers=headers, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            cache_file = os.path.join(settings.CACHE_DIR, "wdpa", f"mpa_{wdpa_id}.json")
+            with open(cache_file, "w") as f:
+                json.dump(data, f)
+            return {"status": "success", "source_status": "LIVE_API", "data": data}
+        else:
+            return {"status": "error", "source_status": "API_ERROR", "message": f"API Error: {response.status_code}"}
+    except Exception as e:
+        return {"status": "error", "source_status": "API_ERROR", "message": str(e)}

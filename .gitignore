@@ -11,3 +11,5 @@ ml/models/*.pt
 !ml/models/.gitkeep
 data/cached_api_responses/**/*.json
 !data/cached_api_responses/**/cached_historical_demo_data.json
+
+.vercel

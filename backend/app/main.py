@@ -14,10 +14,12 @@ from app.models.data_models import EvidenceCard, SARDetection, AISMatch, MPAStat
 
 app = FastAPI(title="OceanGuard AI API", version="1.0.0")
 
+from app.config import settings
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -156,3 +158,26 @@ def export_report(data: dict):
         return {"report_markdown": report_md}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/api/live/mpa/search")
+def search_mpa(query: str):
+    from app.services.protected_planet_client import search_mpa_live
+    return search_mpa_live(query)
+
+@app.get("/api/live/mpa/{wdpa_id}")
+def get_mpa(wdpa_id: int):
+    from app.services.protected_planet_client import get_mpa_live
+    return get_mpa_live(wdpa_id)
+
+class GFWContextRequest(BaseModel):
+    latitude: float
+    longitude: float
+    start_date: str
+    end_date: str
+    radius_km: float
+
+@app.post("/api/live/gfw/context")
+def gfw_context(req: GFWContextRequest):
+    from app.services.gfw_client import fetch_gfw_context
+    return fetch_gfw_context(req.latitude, req.longitude, req.start_date, req.end_date, req.radius_km)
+
