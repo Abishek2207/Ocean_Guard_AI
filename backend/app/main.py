@@ -16,16 +16,22 @@ app = FastAPI(title="OceanGuard AI API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "https://oceanguardai.vercel.app",
-        "https://oceanguardai.vercel.app/",
-        "*"
-    ],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/")
+def root():
+    return {
+        "name": "OceanGuard AI API",
+        "version": "1.0.0",
+        "status": "online",
+        "docs": "/docs",
+        "health": "/health",
+        "demo": "/api/demo/run"
+    }
 
 @app.get("/health")
 def health_check():
