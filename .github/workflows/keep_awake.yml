@@ -1,0 +1,16 @@
+name: Keep Render Backend Awake
+
+on:
+  schedule:
+    # Run every 10 minutes to prevent the Render free tier instance from sleeping
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  ping-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render Backend Health Endpoint
+        run: |
+          echo "Pinging https://ocean-guard-ai.onrender.com/health"
+          curl -sS https://ocean-guard-ai.onrender.com/health || echo "Ping failed but continuing"
