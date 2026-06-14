@@ -35,6 +35,31 @@ def root():
         "demo": "/api/demo/run"
     }
 
+@app.get("/system-integrity")
+def system_integrity():
+    from app.config import settings
+    from app.services.sar_inference import HAS_YOLO
+    import os
+    model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../ml/models/best.pt"))
+    has_model = HAS_YOLO and os.path.exists(model_path)
+    
+    # Check cached data status
+    gfw_cache = os.path.join(settings.CACHE_DIR, "gfw")
+    wdpa_cache = os.path.join(settings.CACHE_DIR, "wdpa")
+    
+    gfw_cache_status = os.path.exists(gfw_cache) and len(os.listdir(gfw_cache)) > 0
+    wdpa_cache_status = os.path.exists(wdpa_cache) and len(os.listdir(wdpa_cache)) > 0
+    
+    return {
+        "YOLO Model Status": "ACTIVE" if has_model else "MISSING (Fail-safe: MODEL_MISSING)",
+        "GFW Status": "LIVE_API_READY" if settings.GFW_API_TOKEN else "CACHED_HISTORICAL",
+        "Protected Planet Status": "LIVE_API_READY" if settings.PROTECTED_PLANET_TOKEN else "CACHED_HISTORICAL",
+        "Backend Status": "ONLINE",
+        "Database Status": "NOT_REQUIRED (Stateless API)",
+        "Cached Data Status": "AVAILABLE" if (gfw_cache_status or wdpa_cache_status) else "MISSING",
+        "API Status": "HEALTHY"
+    }
+
 @app.get("/health")
 def health_check():
     from app.config import settings

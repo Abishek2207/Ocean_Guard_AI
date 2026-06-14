@@ -1,6 +1,9 @@
 import geopandas as gpd
 from shapely.geometry import Point, Polygon
 
+import pyproj
+from shapely.ops import transform
+
 def point_in_polygon(lat: float, lon: float, polygon: Polygon) -> bool:
     """
     Check if a point is within a polygon.
@@ -10,11 +13,20 @@ def point_in_polygon(lat: float, lon: float, polygon: Polygon) -> bool:
 
 def distance_to_boundary(lat: float, lon: float, polygon: Polygon) -> float:
     """
-    Calculate distance to nearest polygon boundary in km.
+    Calculate distance to nearest polygon boundary in km using accurate projection.
     """
-    # Simplistic approximation for demo
     point = Point(lon, lat)
-    # in reality we would project to an equal area CRS
-    dist_degrees = polygon.distance(point)
-    # Approx degrees to km 
-    return dist_degrees * 111.0
+    
+    # Define projections: WGS84 (lon/lat) and an equal-area/azimuthal equidistant projection centered on the point
+    project = pyproj.Transformer.from_proj(
+        pyproj.Proj(proj='latlong', datum='WGS84'),
+        pyproj.Proj(proj='aeqd', lat_0=lat, lon_0=lon, datum='WGS84'),
+        always_xy=True
+    ).transform
+    
+    # Project both the point and the polygon to calculate metric distance
+    point_proj = transform(project, point)
+    poly_proj = transform(project, polygon)
+    
+    dist_meters = poly_proj.distance(point_proj)
+    return dist_meters / 1000.0
