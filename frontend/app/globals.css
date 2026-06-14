@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ocean-950: #020617;
+  --color-ocean-900: #0f172a;
+  --color-ocean-800: #1e293b;
+  --color-ocean-700: #334155;
+  --color-ocean-accent: #38bdf8;
+  --color-ocean-highlight: #0284c7;
+  --color-risk-low: #22c55e;
+  --color-risk-med: #eab308;
+  --color-risk-high: #f97316;
+  --color-risk-crit: #ef4444;
+}
+
+:root {
+  --background: #020617;
+  --foreground: #f8fafc;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
