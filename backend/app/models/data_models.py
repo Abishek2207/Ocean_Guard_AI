@@ -15,6 +15,10 @@ class BoundingBox(BaseModel):
     x_max: float
     y_max: float
 
+class Coordinates(BaseModel):
+    latitude: float
+    longitude: float
+
 class SARDetection(BaseModel):
     id: str
     confidence: float
@@ -44,18 +48,20 @@ class RiskScore(BaseModel):
 
 class EvidenceCard(BaseModel):
     detection_id: str
-    sar_model_name: str
-    sar_model_confidence: float
+    model_name: str
+    model_confidence: float
+    coordinates: Coordinates
     ais_status: str
     ais_source_status: DataSourceStatus
     mpa_status: str
     mpa_name: Optional[str] = None
     mpa_source_status: DataSourceStatus
     distance_to_mpa_km: Optional[float]
-    fishing_likelihood: float
     risk_score: int
     risk_level: str
+    score_breakdown: Dict[str, int]
     why_flagged: str
+    uncertainty_note: str
     human_review_required: bool = True
     legal_safety_note: str = "This is possible dark-fishing risk for human review, not proof of illegal fishing."
 

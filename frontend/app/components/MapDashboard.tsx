@@ -6,9 +6,14 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 
 interface Props {
   detections: any[];
+  toggles: {
+    showAIS: boolean;
+    showHeatmap: boolean;
+    showFishing: boolean;
+  };
 }
 
-export default function MapDashboard({ detections }: Props) {
+export default function MapDashboard({ detections, toggles }: Props) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
@@ -28,9 +33,9 @@ export default function MapDashboard({ detections }: Props) {
     map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
 
     map.current.on('load', () => {
-      // Add fake MPA layer for demo purposes
       if (!map.current) return;
       
+      // MPA Layer
       map.current.addSource('mpas', {
         type: 'geojson',
         data: {
@@ -78,7 +83,7 @@ export default function MapDashboard({ detections }: Props) {
     };
   }, []);
 
-  // Update markers when detections change
+  // Update markers and toggles
   useEffect(() => {
     if (!map.current) return;
 
@@ -94,8 +99,7 @@ export default function MapDashboard({ detections }: Props) {
           const lng = det.detection.longitude;
           const lat = det.detection.latitude;
           
-          // Determine color based on risk
-          let color = '#38bdf8'; // default
+          let color = '#38bdf8'; 
           if (det.risk.level === 'Critical') color = '#ef4444';
           else if (det.risk.level === 'High') color = '#f97316';
           else if (det.risk.level === 'Medium') color = '#eab308';
@@ -114,15 +118,43 @@ export default function MapDashboard({ detections }: Props) {
         map.current.fitBounds(bounds, { padding: 50, maxZoom: 8 });
       }
     }
-  }, [detections]);
+  }, [detections, toggles]);
 
   return (
-    <div className="w-full h-full rounded-xl overflow-hidden border border-ocean-700 relative">
+    <div className="w-full h-full rounded-xl overflow-hidden border border-slate-800 relative shadow-inner">
       <div ref={mapContainer} className="absolute inset-0" />
-      <div className="absolute top-4 left-4 bg-ocean-950/80 backdrop-blur border border-ocean-700 p-2 rounded text-xs text-slate-300 z-10 pointer-events-none">
-        Map layer: Carto Dark Matter (OSM)<br/>
-        MPA layer: Simulated via backend
+      
+      {/* Map Legend Overlay */}
+      <div className="absolute top-4 left-4 bg-slate-900/90 backdrop-blur border border-slate-700 p-3 rounded-lg text-xs text-slate-300 z-10 shadow-lg">
+        <h4 className="font-bold text-white mb-2 uppercase tracking-wider text-[10px]">Active Layers</h4>
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-cyan-600/30 border border-cyan-400 rounded-sm"></div>
+            <span>MPA Boundaries (WDPA)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-red-500"></div>
+            <span>Critical Risk</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+            <span>High Risk</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+            <span>Medium Risk</span>
+          </div>
+        </div>
       </div>
+      
+      {/* Toggles Status overlay */}
+      {(toggles.showAIS || toggles.showHeatmap || toggles.showFishing) && (
+        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-cyan-950/80 backdrop-blur border border-cyan-500/30 px-4 py-2 rounded-full text-xs font-mono text-cyan-400 z-10 flex gap-4 shadow-lg">
+          {toggles.showAIS && <span>[AIS: ON]</span>}
+          {toggles.showHeatmap && <span>[HEATMAP: ON]</span>}
+          {toggles.showFishing && <span>[EFFORT: ON]</span>}
+        </div>
+      )}
     </div>
   );
 }

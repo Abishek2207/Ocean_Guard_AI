@@ -9,6 +9,15 @@ This system assists human analysts by flagging *possible* dark fishing risk base
 - `frontend/`: Next.js frontend (Tailwind CSS, MapLibre)
 - `backend/`: FastAPI backend (Python, YOLOv8 inference, Geospatial tools)
 
+## How to demo in 3 minutes
+Step 1: Open landing page
+Step 2: Launch dashboard
+Step 3: Click Load Cached Historical Demo
+Step 4: Open Critical evidence card
+Step 5: Ask OceanGuard: "Which detections need review first?"
+Step 6: Show patrol recommendation
+Step 7: Export report
+
 ## Setup Instructions
 
 ### Backend

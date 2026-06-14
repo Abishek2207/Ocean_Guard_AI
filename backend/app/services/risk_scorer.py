@@ -1,6 +1,6 @@
 from app.models.data_models import RiskScore
 
-def calculate_risk(sar_conf: float, ais_status: str, mpa_status: str, fishing_likelihood: float, is_repeat: bool = False) -> RiskScore:
+def calculate_risk(sar_conf: float, ais_status: str, mpa_status: str, fishing_likelihood: float, repeat_score: int = 0) -> RiskScore:
     """
     Risk Scoring Engine:
     - SAR confidence: 0-25
@@ -8,7 +8,7 @@ def calculate_risk(sar_conf: float, ais_status: str, mpa_status: str, fishing_li
     - Inside MPA: +30
     - Within MPA buffer: +15
     - Fishing likelihood: 0-15
-    - Repeated detection: +5
+    - Repeated detection: 0-10
     """
     score = 0
     factors = {}
@@ -40,9 +40,10 @@ def calculate_risk(sar_conf: float, ais_status: str, mpa_status: str, fishing_li
     factors["Fishing Likelihood"] = fish_factor
     
     # Repeat detection
-    if is_repeat:
-        score += 5
-        factors["Repeated Detection"] = 5
+    repeat_factor = int(min(10, max(0, repeat_score)))
+    if repeat_factor > 0:
+        score += repeat_factor
+        factors["Repeated Detection"] = repeat_factor
         
     # Cap score at 100
     score = min(100, score)

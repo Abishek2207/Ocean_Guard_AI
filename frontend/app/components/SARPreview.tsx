@@ -17,7 +17,8 @@ export default function SARPreview({ onInferenceComplete }: Props) {
     setError(null);
     try {
       // In a real app we'd upload an image. Here we just trigger the endpoint
-      const res = await axios.post('http://localhost:8000/api/sar/infer');
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const res = await axios.post(`${API_URL}/api/sar/infer`);
       onInferenceComplete(res.data.results);
     } catch (err) {
       console.error(err);
@@ -51,17 +52,43 @@ export default function SARPreview({ onInferenceComplete }: Props) {
         </div>
       )}
 
-      <button
-        onClick={handleRunInference}
-        disabled={loading}
-        className="w-full bg-ocean-highlight hover:bg-ocean-accent text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {loading ? (
-          <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-        ) : (
-          'Run Vessel Detector'
-        )}
-      </button>
+      <div className="flex flex-col gap-2">
+        <button
+          onClick={handleRunInference}
+          disabled={loading}
+          className="w-full bg-ocean-highlight hover:bg-ocean-accent text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? (
+            <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+          ) : (
+            'Run Vessel Detector'
+          )}
+        </button>
+
+        <button
+          onClick={async () => {
+            setLoading(true);
+            setError(null);
+            try {
+              const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+              const res = await axios.get(`${API_URL}/api/demo/run`);
+              onInferenceComplete(res.data.results);
+            } catch (err) {
+              console.error(err);
+              setError('Failed to load demo scenario.');
+            } finally {
+              setLoading(false);
+            }
+          }}
+          disabled={loading}
+          className="w-full bg-slate-800 hover:bg-slate-700 text-cyan-400 font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm border border-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Load Cached Historical Demo
+        </button>
+        <p className="text-[10px] text-slate-500 text-center leading-tight mt-1">
+          This demo uses cached historical-style data shaped to the real OceanGuard pipeline schema. Live API mode is used when tokens are configured.
+        </p>
+      </div>
     </div>
   );
 }
