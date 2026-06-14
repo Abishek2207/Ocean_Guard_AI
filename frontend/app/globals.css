@@ -1,25 +1,192 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ocean-950: #020617;
-  --color-ocean-900: #0f172a;
-  --color-ocean-800: #1e293b;
-  --color-ocean-700: #334155;
-  --color-ocean-accent: #38bdf8;
-  --color-ocean-highlight: #0284c7;
-  --color-risk-low: #22c55e;
-  --color-risk-med: #eab308;
+  /* === Ocean Color Palette === */
+  --color-abyss: #000a12;
+  --color-deep: #020d1a;
+  --color-surface: #061626;
+  --color-ocean-text: #c8dde8;
+  --color-ocean-muted: #4a7a96;
+  --color-ocean-subtle: #1a3347;
+
+  /* === Accent Colors === */
+  --color-teal: #00d4c8;
+  --color-teal-dim: #00a89e;
+  --color-indigo: #6366f1;
+  --color-amber: #f59e0b;
+  --color-crimson: #ef4444;
+
+  /* === Risk Colors === */
+  --color-risk-low: #10b981;
+  --color-risk-med: #f59e0b;
   --color-risk-high: #f97316;
   --color-risk-crit: #ef4444;
+
+  /* === Glass Surfaces === */
+  --color-glass: rgba(6, 22, 38, 0.7);
+  --color-glass-border: rgba(0, 212, 200, 0.12);
+
+  /* === Typography === */
+  --font-display: var(--font-geist), system-ui, sans-serif;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
 }
 
 :root {
-  --background: #020617;
-  --foreground: #f8fafc;
+  --background: #000a12;
+  --foreground: #c8dde8;
 }
+
+/* === Base === */
+* { box-sizing: border-box; }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+}
+
+code, pre, .font-mono {
+  font-family: var(--font-mono);
+}
+
+/* === Custom Scrollbar === */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #1a3347; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #00d4c8; }
+
+/* === Glass Panel === */
+.glass {
+  background: rgba(6, 22, 38, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 212, 200, 0.10);
+}
+
+.glass-strong {
+  background: rgba(2, 13, 26, 0.85);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border: 1px solid rgba(0, 212, 200, 0.15);
+}
+
+/* === Glows === */
+.glow-teal {
+  box-shadow: 0 0 40px rgba(0, 212, 200, 0.12), 0 0 80px rgba(0, 212, 200, 0.06);
+}
+
+.glow-critical {
+  box-shadow: 0 0 40px rgba(239, 68, 68, 0.15), 0 0 80px rgba(239, 68, 68, 0.07);
+}
+
+/* === Ocean Gradient Backgrounds === */
+.ocean-bg {
+  background: radial-gradient(ellipse 80% 60% at 50% -10%, #001f3f 0%, #000a12 70%);
+}
+
+.hero-bg {
+  background:
+    radial-gradient(ellipse 60% 50% at 30% 40%, rgba(0, 212, 200, 0.04) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 60% at 70% 60%, rgba(99, 102, 241, 0.04) 0%, transparent 70%),
+    linear-gradient(180deg, #000f1e 0%, #000a12 50%, #020d1a 100%);
+}
+
+/* === Animated Horizon Line === */
+.horizon {
+  background: linear-gradient(90deg, transparent, rgba(0, 212, 200, 0.3), transparent);
+  height: 1px;
+  animation: horizonPulse 4s ease-in-out infinite;
+}
+
+@keyframes horizonPulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+}
+
+/* === Scan Line Animation === */
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(400%); }
+}
+
+.scanline::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 25%;
+  background: linear-gradient(180deg, transparent, rgba(0, 212, 200, 0.04), transparent);
+  animation: scanline 8s linear infinite;
+  pointer-events: none;
+}
+
+/* === Pulse Ring === */
+@keyframes pulseRing {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+.pulse-ring {
+  animation: pulseRing 2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+/* === Ocean Wave === */
+@keyframes waveFloat {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-6px) rotate(0.5deg); }
+  66% { transform: translateY(4px) rotate(-0.3deg); }
+}
+
+.wave-float {
+  animation: waveFloat 8s ease-in-out infinite;
+}
+
+/* === Classification Stripe === */
+.intel-stripe {
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(239,68,68,0.8) 0px,
+    rgba(239,68,68,0.8) 20px,
+    transparent 20px,
+    transparent 30px
+  );
+}
+
+/* === Orbit Globe === */
+@keyframes orbitGlobe {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes orbitReverse {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+
+/* === Depth Grid === */
+.depth-grid {
+  background-image:
+    linear-gradient(rgba(0, 212, 200, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 200, 0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* === Text Gradient === */
+.text-gradient-teal {
+  background: linear-gradient(135deg, #00d4c8 0%, #6366f1 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-ocean {
+  background: linear-gradient(180deg, #f0f8ff 0%, #7ab8cc 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }

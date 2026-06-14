@@ -1,191 +1,273 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Bot, Radar, MessageSquare, FileText, Crosshair, Send, Anchor, Activity } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Search, Waves, Radio, Navigation, Send, Activity, Anchor, MessageSquare } from 'lucide-react';
 
 interface Props {
   analysis: any;
   allDetections?: any[];
 }
 
+const AGENTS = [
+  {
+    id: 'narrator',
+    icon: <Search className="w-4 h-4" />,
+    label: 'Analyst',
+    role: 'Evidence Narrator',
+    color: '#6366f1',
+    placeholder: 'Review complete.',
+  },
+  {
+    id: 'chat',
+    icon: <Waves className="w-4 h-4" />,
+    label: 'Intelligence',
+    role: 'Ask OceanGuard',
+    color: '#00d4c8',
+    placeholder: 'Ask about this detection...',
+  },
+  {
+    id: 'briefing',
+    icon: <Radio className="w-4 h-4" />,
+    label: 'Ops Officer',
+    role: 'Daily Briefing',
+    color: '#f59e0b',
+    placeholder: 'Briefing ready.',
+  },
+  {
+    id: 'patrol',
+    icon: <Navigation className="w-4 h-4" />,
+    label: 'Planner',
+    role: 'Patrol Priority',
+    color: '#ef4444',
+    placeholder: 'Targets ranked.',
+  },
+];
+
+const slideIn = {
+  hidden: { opacity: 0, x: 12 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.4, ease: 'easeOut' as const } },
+  exit: { opacity: 0, x: -12, transition: { duration: 0.2 } },
+};
+
 export default function AgentPanel({ analysis, allDetections = [] }: Props) {
   const [activeTab, setActiveTab] = useState<'narrator' | 'chat' | 'briefing' | 'patrol'>('narrator');
   const [chatInput, setChatInput] = useState('');
-  const [chatHistory, setChatHistory] = useState<{role: 'user' | 'agent', text: string}[]>([
-    { role: 'agent', text: 'Hello, OceanGuard Assistant here. I can answer questions about the currently selected detection based on the evidence card. How can I help?' }
+  const [chatHistory, setChatHistory] = useState<{ role: 'user' | 'agent'; text: string }[]>([
+    { role: 'agent', text: 'OceanGuard Intelligence online. Ask me about the selected detection — SAR confidence, AIS status, MPA proximity, or risk reasoning.' },
   ]);
+
+  const activeAgent = AGENTS.find(a => a.id === activeTab)!;
 
   if (!analysis) {
     return (
-      <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800 rounded-xl h-full flex flex-col items-center justify-center p-8 text-center text-slate-500 shadow-2xl relative overflow-hidden">
-        <Bot className="w-12 h-12 mb-4 opacity-30 text-cyan-500" />
-        <p className="font-semibold text-lg text-slate-400">Agent Operations Center</p>
-        <p className="text-sm">Awaiting detection data to activate AI analysis modules.</p>
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-cyan-900/10 via-transparent to-transparent pointer-events-none"></div>
+      <div className="glass-strong rounded-2xl h-full flex flex-col items-center justify-center p-8 text-center relative overflow-hidden">
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
+          style={{ background: 'rgba(0,212,200,0.06)', border: '1px solid rgba(0,212,200,0.12)' }}>
+          <MessageSquare className="w-7 h-7 text-teal opacity-40" />
+        </div>
+        <p className="font-bold text-ocean-text text-base mb-1">Agent Operations Center</p>
+        <p className="text-sm text-ocean-muted">Load a detection to activate your intelligence crew.</p>
       </div>
     );
   }
 
-  const handleChatSubmit = (e: React.FormEvent) => {
+  const handleChat = (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
-
     const newHistory = [...chatHistory, { role: 'user' as const, text: chatInput }];
     setChatHistory(newHistory);
     setChatInput('');
-
-    // Historical demo response based on selected analysis
     setTimeout(() => {
-      let reply = "I only have context on the current detection. ";
       const input = chatInput.toLowerCase();
-      
-      if (input.includes('risk')) reply = `The risk reasoning is: ${analysis.risk_reasoning}`;
-      else if (input.includes('mpa') || input.includes('protected')) reply = `Regarding MPA overlap: ${analysis.mpa_geospatial}`;
-      else if (input.includes('ais') || input.includes('dark')) reply = `AIS Intelligence reports: ${analysis.ais_intelligence}`;
-      else if (input.includes('confidence') || input.includes('sar')) reply = `The detection analyst states: ${analysis.detection_analyst}`;
-      else reply += "Please ask about SAR confidence, AIS mismatch, MPA proximity, or Risk level.";
-
+      let reply = 'I can only reference the evidence card for this detection. ';
+      if (input.includes('risk')) reply = analysis.risk_reasoning;
+      else if (input.includes('mpa') || input.includes('protected')) reply = analysis.mpa_geospatial;
+      else if (input.includes('ais') || input.includes('dark')) reply = analysis.ais_intelligence;
+      else if (input.includes('confidence') || input.includes('sar')) reply = analysis.detection_analyst;
+      else reply += 'Try asking about: SAR confidence, AIS mismatch, MPA proximity, or risk level.';
       setChatHistory([...newHistory, { role: 'agent', text: reply }]);
-    }, 600);
+    }, 500);
   };
 
-  const highRiskCount = allDetections.filter(d => ['Critical', 'High'].includes(d.evidence_card.risk_level)).length;
-  
+  const highRiskCount = allDetections.filter(d => ['Critical', 'High'].includes(d.evidence_card?.risk_level)).length;
+
   return (
-    <div className="bg-slate-900/80 backdrop-blur-md border border-cyan-500/20 rounded-xl flex flex-col h-full shadow-2xl overflow-hidden">
-      {/* Header */}
-      <div className="p-3 border-b border-slate-800 bg-slate-950/80 flex flex-col gap-2 shrink-0">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold text-white flex items-center gap-2 uppercase tracking-wider">
-            <Bot className="w-4 h-4 text-cyan-400" />
-            Operations Center
-          </h2>
-          <div className="text-[10px] font-mono text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded border border-cyan-400/20">
-            SOURCE-BACKED
+    <div className="glass-strong rounded-2xl flex flex-col h-full overflow-hidden">
+
+      {/* Agent Tabs */}
+      <div className="flex gap-px p-1 m-3 rounded-xl" style={{ background: 'rgba(0,0,0,0.3)' }}>
+        {AGENTS.map(agent => (
+          <button
+            key={agent.id}
+            onClick={() => setActiveTab(agent.id as any)}
+            className="flex-1 flex flex-col items-center gap-0.5 py-2.5 px-1 rounded-lg text-center transition-all duration-300 relative"
+            style={{
+              background: activeTab === agent.id ? agent.color + '15' : 'transparent',
+              border: activeTab === agent.id ? `1px solid ${agent.color}30` : '1px solid transparent',
+            }}
+          >
+            <span style={{ color: activeTab === agent.id ? agent.color : '#4a7a96' }}>{agent.icon}</span>
+            <span className="text-[9px] font-bold uppercase tracking-wider leading-none"
+              style={{ color: activeTab === agent.id ? agent.color : '#4a7a96' }}>
+              {agent.label}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Active Agent Header */}
+      <div className="px-4 pb-3 flex items-center gap-3 shrink-0">
+        <div className="w-1 h-6 rounded-full" style={{ background: activeAgent.color }} />
+        <div>
+          <div className="text-[9px] font-mono uppercase tracking-widest" style={{ color: activeAgent.color }}>
+            {activeAgent.role}
           </div>
         </div>
-        
-        {/* Tabs */}
-        <div className="flex bg-slate-950 p-1 rounded-lg border border-slate-800">
-          {[
-            { id: 'narrator', icon: <Radar className="w-3.5 h-3.5" />, label: 'Narrator' },
-            { id: 'chat', icon: <MessageSquare className="w-3.5 h-3.5" />, label: 'Ask AI' },
-            { id: 'briefing', icon: <FileText className="w-3.5 h-3.5" />, label: 'Briefing' },
-            { id: 'patrol', icon: <Crosshair className="w-3.5 h-3.5" />, label: 'Patrol' },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-md transition-all ${
-                activeTab === tab.id 
-                  ? 'bg-cyan-500/20 text-cyan-300 shadow-[inset_0_0_10px_rgba(34,211,238,0.2)]' 
-                  : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'
-              }`}
-            >
-              {tab.icon}
-              <span className="hidden sm:inline">{tab.label}</span>
-            </button>
-          ))}
+        <div className="ml-auto flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: activeAgent.color }} />
+          <span className="text-[9px] font-mono text-ocean-muted">ACTIVE</span>
         </div>
       </div>
-      
-      {/* Content Area */}
-      <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-gradient-to-b from-slate-900 to-slate-950">
-        
-        {activeTab === 'narrator' && (
-          <div className="space-y-4">
-            {[
-              { title: 'Detection Analyst', text: analysis.detection_analyst, color: 'text-blue-400' },
-              { title: 'AIS Intelligence', text: analysis.ais_intelligence, color: 'text-purple-400' },
-              { title: 'MPA Geospatial', text: analysis.mpa_geospatial, color: 'text-emerald-400' },
-              { title: 'Risk Reasoning', text: analysis.risk_reasoning, color: 'text-orange-400' }
-            ].map((item, i) => (
-              <div key={i} className="bg-slate-950/50 border border-slate-800/50 rounded-lg p-3 text-sm text-slate-300 leading-relaxed shadow-inner">
-                <h3 className={`text-[10px] font-bold uppercase mb-1 ${item.color} tracking-wider`}>{item.title}</h3>
-                <p className="text-sm">{item.text}</p>
+
+      <div className="w-full h-px" style={{ background: `${activeAgent.color}20` }} />
+
+      {/* Content */}
+      <div className="flex-1 overflow-hidden relative">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            variants={slideIn}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="absolute inset-0 overflow-y-auto p-4 flex flex-col gap-3"
+          >
+            {/* NARRATOR */}
+            {activeTab === 'narrator' && (
+              <>
+                {[
+                  { title: 'Detection Analyst', text: analysis.detection_analyst, color: '#6366f1' },
+                  { title: 'AIS Intelligence', text: analysis.ais_intelligence, color: '#00d4c8' },
+                  { title: 'MPA Geospatial', text: analysis.mpa_geospatial, color: '#10b981' },
+                  { title: 'Risk Reasoning', text: analysis.risk_reasoning, color: '#f59e0b' },
+                ].map((item, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.08, duration: 0.4 }}
+                    className="rounded-xl p-4"
+                    style={{ background: 'rgba(6,22,38,0.7)', border: `1px solid ${item.color}15` }}
+                  >
+                    <div className="text-[10px] font-mono uppercase tracking-widest mb-2" style={{ color: item.color }}>
+                      {item.title}
+                    </div>
+                    <p className="text-xs text-ocean-text leading-relaxed">{item.text}</p>
+                  </motion.div>
+                ))}
+              </>
+            )}
+
+            {/* CHAT */}
+            {activeTab === 'chat' && (
+              <div className="flex flex-col h-full min-h-[200px]">
+                <div className="flex-1 space-y-3 mb-3">
+                  {chatHistory.map((msg, i) => (
+                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[88%] px-4 py-2.5 rounded-2xl text-xs leading-relaxed ${
+                        msg.role === 'user'
+                          ? 'text-white rounded-br-sm'
+                          : 'text-ocean-text rounded-bl-sm'
+                      }`}
+                        style={msg.role === 'user'
+                          ? { background: '#00d4c8', color: '#000a12' }
+                          : { background: 'rgba(6,22,38,0.8)', border: '1px solid rgba(0,212,200,0.1)' }
+                        }>
+                        {msg.text}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <form onSubmit={handleChat} className="relative mt-auto shrink-0">
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={e => setChatInput(e.target.value)}
+                    placeholder="Ask about this detection..."
+                    className="w-full py-2.5 pl-4 pr-10 text-xs rounded-xl text-ocean-text placeholder-ocean-muted focus:outline-none focus:ring-1"
+                    style={{ background: 'rgba(2,13,26,0.9)', border: '1px solid rgba(0,212,200,0.15)' }}
+                  />
+                  <button type="submit" disabled={!chatInput.trim()}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center disabled:opacity-30 transition-colors"
+                    style={{ background: 'rgba(0,212,200,0.15)', color: '#00d4c8' }}>
+                    <Send className="w-3 h-3" />
+                  </button>
+                </form>
               </div>
-            ))}
-          </div>
-        )}
+            )}
 
-        {activeTab === 'chat' && (
-          <div className="flex flex-col h-full">
-            <div className="flex-1 overflow-y-auto space-y-3 mb-3 pr-2 custom-scrollbar">
-              {chatHistory.map((msg, i) => (
-                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] p-3 rounded-2xl text-sm ${
-                    msg.role === 'user' 
-                      ? 'bg-cyan-600 text-white rounded-br-sm' 
-                      : 'bg-slate-800 text-slate-200 rounded-bl-sm border border-slate-700'
-                  }`}>
-                    {msg.text}
+            {/* BRIEFING */}
+            {activeTab === 'briefing' && (
+              <div className="space-y-4">
+                <div className="rounded-xl p-5" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)' }}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Activity className="w-4 h-4 text-amber-400" />
+                    <span className="text-xs font-bold text-amber-400 uppercase tracking-widest">Situation Report</span>
                   </div>
+                  <p className="text-xs text-ocean-text leading-relaxed">
+                    OceanGuard has processed <span className="text-white font-bold">{allDetections.length}</span> SAR detections.{' '}
+                    <span className="text-red-400 font-bold">{highRiskCount} high-priority events</span> require immediate analyst review.
+                  </p>
                 </div>
-              ))}
-            </div>
-            <form onSubmit={handleChatSubmit} className="relative mt-auto">
-              <input 
-                type="text" 
-                value={chatInput}
-                onChange={e => setChatInput(e.target.value)}
-                placeholder="Ask about this detection..."
-                className="w-full bg-slate-950 border border-slate-700 rounded-full py-2.5 pl-4 pr-10 text-sm text-slate-200 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-              />
-              <button type="submit" disabled={!chatInput.trim()} className="absolute right-2 top-1/2 transform -translate-y-1/2 w-7 h-7 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center disabled:opacity-50 hover:bg-cyan-500/40 transition-colors">
-                <Send className="w-3.5 h-3.5" />
-              </button>
-            </form>
-          </div>
-        )}
-
-        {activeTab === 'briefing' && (
-          <div className="space-y-4">
-            <div className="bg-slate-800/50 border border-cyan-500/30 p-4 rounded-xl">
-              <h3 className="text-cyan-400 font-bold flex items-center gap-2 mb-2"><Activity className="w-4 h-4"/> Situation Report</h3>
-              <p className="text-sm text-slate-300 leading-relaxed">
-                OceanGuard AI has processed {allDetections.length} total SAR detections in the current mission. 
-                There are currently <strong className="text-white">{highRiskCount} high or critical risk events</strong> that require immediate analyst review.
-              </p>
-            </div>
-            <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl">
-              <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Current Focus</h4>
-              <p className="text-sm text-slate-400">
-                {analysis.human_reviewer}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'patrol' && (
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold text-slate-300 mb-2 px-1 flex items-center gap-2"><Anchor className="w-4 h-4 text-orange-400"/> Priority Ranking</h3>
-            {allDetections
-              .slice()
-              .sort((a, b) => b.evidence_card.risk_score - a.evidence_card.risk_score)
-              .slice(0, 5)
-              .map((d, i) => (
-                <div key={d.evidence_card.detection_id} className={`p-3 rounded-lg border ${
-                  i === 0 ? 'bg-orange-500/10 border-orange-500/30' : 'bg-slate-950 border-slate-800'
-                } flex items-center justify-between`}>
-                  <div>
-                    <div className="text-xs font-mono text-slate-400">#{i+1} Priority</div>
-                    <div className="text-sm font-bold text-slate-200">ID: {d.evidence_card.detection_id.split('-').pop()}</div>
-                  </div>
-                  <div className={`px-2 py-1 rounded text-xs font-bold ${
-                    d.evidence_card.risk_level === 'Critical' ? 'bg-red-500/20 text-red-400' :
-                    d.evidence_card.risk_level === 'High' ? 'bg-orange-500/20 text-orange-400' :
-                    'bg-slate-800 text-slate-400'
-                  }`}>
-                    {d.evidence_card.risk_score}
-                  </div>
+                <div className="rounded-xl p-4" style={{ background: 'rgba(6,22,38,0.7)', border: '1px solid rgba(0,212,200,0.08)' }}>
+                  <div className="text-[10px] font-mono text-ocean-muted uppercase tracking-wider mb-2">Human Reviewer Recommendation</div>
+                  <p className="text-xs text-ocean-text leading-relaxed">{analysis.human_reviewer}</p>
                 </div>
-              ))}
-              {allDetections.length > 5 && (
-                <div className="text-center text-xs text-slate-500 pt-2">+ {allDetections.length - 5} more detections</div>
-              )}
-          </div>
-        )}
+              </div>
+            )}
 
+            {/* PATROL */}
+            {activeTab === 'patrol' && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 mb-3">
+                  <Anchor className="w-3.5 h-3.5 text-red-400" />
+                  <span className="text-[10px] font-mono text-red-400 uppercase tracking-widest">Priority Ranking</span>
+                </div>
+                {allDetections
+                  .slice()
+                  .sort((a, b) => b.evidence_card.risk_score - a.evidence_card.risk_score)
+                  .slice(0, 5)
+                  .map((d, i) => (
+                    <div key={d.evidence_card.detection_id}
+                      className="flex items-center justify-between rounded-xl px-4 py-3"
+                      style={{
+                        background: i === 0 ? 'rgba(239,68,68,0.08)' : 'rgba(6,22,38,0.6)',
+                        border: `1px solid ${i === 0 ? 'rgba(239,68,68,0.25)' : 'rgba(0,212,200,0.06)'}`,
+                      }}>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] font-black text-ocean-muted font-mono">#{i + 1}</span>
+                        <span className="text-xs font-mono text-ocean-text truncate max-w-[100px]">
+                          {d.evidence_card.detection_id.split('-').pop()}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono text-ocean-muted">{d.evidence_card.risk_level}</span>
+                        <span className={`text-xs font-black px-2 py-0.5 rounded-lg ${
+                          d.evidence_card.risk_level === 'Critical' ? 'text-red-400 bg-red-400/10' :
+                          d.evidence_card.risk_level === 'High' ? 'text-orange-400 bg-orange-400/10' :
+                          'text-ocean-muted bg-ocean-subtle/20'
+                        }`}>{d.evidence_card.risk_score}</span>
+                      </div>
+                    </div>
+                  ))}
+                {allDetections.length > 5 && (
+                  <p className="text-center text-[10px] text-ocean-muted pt-1">+{allDetections.length - 5} more detections</p>
+                )}
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );
